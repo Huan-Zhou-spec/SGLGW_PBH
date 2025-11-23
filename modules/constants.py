@@ -36,10 +36,10 @@ kelvintoeV = kelvintoerg/eVtoerg   # 1 kelvin = kelvintoeV eV
 G_N = 6.67259e-8 # cm^3 g^-1 s^-2
 hlittle = 0.678 #0.678
 H0 = hlittle*3.2407e-18 # s^-1
-Omega_b = 0.02226/hlittle**2.
-Omega_m = 0.32 #0.3158
+Omega_b = 0.049
+Omega_m = 0.3111 #0.3158
 Omega_dm = Omega_m - Omega_b
-Omega_l = 0.68 #1.-Omega_m
+Omega_l = 1- Omega_m #1.-Omega_m
 Y_He = 0.245    # mass fraction
 mu = 1./(1.-3.*Y_He/4.) # mean molecular weight, mu=1.22 for neutral H + He
 rho_c = 3.*H0**2./(8.*np.pi*G) # g cm^-3

@@ -38,8 +38,8 @@ class PlotConfig:
         # 功率谱图参数
         self.pow_xlim = (1e-4, 1e1)
         self.pow_ylim = (1e-2, 1e5)
-        self.pow_xlabel = '$k$ [$h$/Mpc]'
-        self.pow_ylabel = '$P(k)$'
+        self.pow_xlabel = r'$k$ [$h$/Mpc]'
+        self.pow_ylabel = r'$P(k)$ [$({\rm Mpc}/h)^3$]'
         self.pow_line_width = 2.0
         self.pow_grid_alpha = 0.3
         self.pow_legend_loc = 3
@@ -49,8 +49,8 @@ class PlotConfig:
         # 质量函数图参数（质量空间）
         self.halo_ylim_m = (1e-7, 1e1)
         self.halo_xlim_m = (1e8, 1e13)
-        self.halo_xlabel_m = '$M$ [$M_{\\odot}/h$]'
-        self.halo_ylabel_m = 'd$n$/dln$M$ [$(h$/Mpc$)^3$]'
+        self.halo_xlabel_m = r'$M_{\rm h}$ [$M_{\odot}/h$]'
+        self.halo_ylabel_m = r'd$n$/dln$M_{\rm h}$ [$(h$/Mpc$)^3$]'
         self.halo_line_width_m = 2.0
         self.halo_grid_alpha_m = 0.3
         self.halo_legend_loc_m = 3
@@ -109,7 +109,7 @@ def plot_power_spectrum(ax, k, fpbh, MassPBH, xcl, xi0, config):
     
     ax.loglog(k, IsoPS(k, fpbh, MassPBH, xcl, xi0, 'clu'), 
              color='red', linestyle="-", 
-             label=r"PBH (cluster)", 
+             label=r"PBH (Cluster)", 
              linewidth=config.pow_line_width)
     ax.loglog(k, IsoPS(k, fpbh, MassPBH, xcl, xi0, 'pos'), 
              color='red', linestyle="--", 
@@ -117,7 +117,7 @@ def plot_power_spectrum(ax, k, fpbh, MassPBH, xcl, xi0, config):
              linewidth=config.pow_line_width)
     ax.loglog(k, PkPBH(k, fpbh, MassPBH, xcl, xi0, 'clu'), 
              color='blue', linestyle="-", 
-             label=r"$\Lambda$CDM+PBH (cluster)", 
+             label=r"$\Lambda$CDM+PBH (Cluster)", 
              linewidth=config.pow_line_width)
     ax.loglog(k, PkPBH(k, fpbh, MassPBH, xcl, xi0, 'pos'), 
              color='green', linestyle="--", 
@@ -223,7 +223,7 @@ def plot_mass_function(ax, M, z, fpbh, MassPBH, xcl, xi0, config, space='mass'):
 MassPBH = 1e9
 fracs = 1e-3
 xcl = 1  # Mpc
-xi0 = 100
+xi0 = 10
 z = 7
 
 # 定义计算范围

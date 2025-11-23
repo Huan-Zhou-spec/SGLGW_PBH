@@ -26,7 +26,7 @@ class PBHPowerSpectrum:
     PBH功率谱计算类，封装所有参数
     """
     
-    def __init__(self, fpbh, Mpbh, xcl=None, xi0=None, mode='clu'):
+    def __init__(self, fpbh, Mpbh, xcl=None, xi0=None, mode='pos'):
         """
         初始化PBH功率谱计算器
         
@@ -66,14 +66,16 @@ class PBHPowerSpectrum:
     def _precompute_constants(self):
         """预计算常量"""
         # 宇宙学参数（假设这些已在全局定义）
-        self.onepluszeq = 2.4e4 * Omega_m * hlittle**2  # 1+zeq
-        self.npbh = 3.3e10 * self.fpbh / self.Mpbh  # Mpc^-3
+        self.onepluszeq = 3401  # 1+zeq
+        self.gamma = Omega_dm /Omega_m
+        #self.npbh = 3.3e10 * self.fpbh / self.Mpbh / hlittle**3  #(h/Mpc)^3
+        self.npbh = rho_c_Mpc*Omega_dm*self.fpbh/self.Mpbh/hlittle #(h/Mpc)^3
         
         # 模式特定的预计算
         if self.mode == 'clu':
             self.kclu = (3 * np.pi / 2 / self.xi0)**(1/3) / self.xcl / hlittle  # h/Mpc
         elif self.mode == 'pos':
-            self.kpbh = (2 * np.pi**2 * self.npbh)**(1/3) / hlittle  # h/Mpc
+            self.kpbh = (2 * np.pi**2 * self.npbh)**(1/3) # h/Mpc
     
     def isochronous_power_spectrum(self, k):
         """
@@ -87,7 +89,7 @@ class PBHPowerSpectrum:
         Returns:
         --------
         Pk : float or array_like
-            功率谱
+            功率谱 [Mpc^3/h^3]
         """
         if self.mode == 'clu':
             return self._isochronous_clu(k)
@@ -96,13 +98,15 @@ class PBHPowerSpectrum:
     
     def _isochronous_clu(self, k):
         """成团PBH的功率谱计算"""
+        a_ = (np.sqrt(1+24*self.gamma)-1)/4
+        Tpbh = (1+1.5*self.gamma/a_*self.onepluszeq)**a_
         if isinstance(k, (int, float)):
             # 单个k值
             if k <= self.kclu:
-                term1 = self.fpbh * self.Mpbh * hlittle / ((Omega_m - Omega_b) * rho_c_Mpc)
-                term2 = self.fpbh**2 * 4 * np.pi * self.xi0 / k**3 * hlittle**3 * \
-                        (np.sin(k * self.xcl) - k * self.xcl * np.cos(k * self.xcl))
-                return (9. / 4.) * self.onepluszeq**2 * (term1 + term2)
+                term1 = 1 / self.npbh
+                term2 =  4 * np.pi * self.xi0 / k**3 * \
+                        (np.sin(k / hlittle * self.xcl) - k/hlittle * self.xcl * np.cos(k / hlittle * self.xcl))
+                return   self.fpbh**2 *Tpbh**2 * (term1 + term2)
             else:
                 return 0.0
         else:
@@ -111,28 +115,30 @@ class PBHPowerSpectrum:
             mask = k <= self.kclu
             k_masked = k[mask]
             
-            term1 = self.fpbh * self.Mpbh * hlittle / ((Omega_m - Omega_b) * rho_c_Mpc)
-            term2 = self.fpbh**2 * 4 * np.pi * self.xi0 / k_masked**3 * hlittle**3 * \
-                    (np.sin(k_masked * self.xcl) - k_masked * self.xcl * np.cos(k_masked * self.xcl))
+            term1 = 1 / self.npbh
+            term2 = 4 * np.pi * self.xi0 / k_masked**3 * \
+                    (np.sin(k_masked/hlittle * self.xcl) - k_masked/hlittle * self.xcl * np.cos(k_masked/hlittle * self.xcl))
             
-            result[mask] = (9. / 4.) * self.onepluszeq**2 * (term1 + term2)
+            result[mask] = self.fpbh**2 *Tpbh**2 * (term1 + term2)
             return result
     
     def _isochronous_pos(self, k):
         """泊松PBH的功率谱计算"""
+        a_ = (np.sqrt(1+24*self.gamma)-1)/4
+        Tpbh = (1+1.5*self.gamma/a_*self.onepluszeq)**a_
         if isinstance(k, (int, float)):
             # 单个k值
             if k <= self.kpbh:
-                term = self.fpbh * self.Mpbh * hlittle / ((Omega_m - Omega_b) * rho_c_Mpc)
-                return (9. / 4.) * self.onepluszeq**2 * term
+                term = 1 / self.npbh
+                return self.fpbh**2 * Tpbh**2 * term
             else:
                 return 0.0
         else:
             # k数组
             result = np.zeros_like(k)
             mask = k <= self.kpbh
-            term = self.fpbh * self.Mpbh * hlittle / ((Omega_m - Omega_b) * rho_c_Mpc)
-            result[mask] = (9. / 4.) * self.onepluszeq**2 * term
+            term = 1 / self.npbh
+            result[mask] = self.fpbh**2 * Tpbh**2 * term
             return result
     
     def total_power_spectrum(self, k):
@@ -158,7 +164,7 @@ class PBHPowerSpectrum:
         return Pk_cosmo + Pk_pbh
 
 # 保持原有函数接口的包装函数
-def IsoPS(k, fpbh, Mpbh, xcl=None, xi0=None, mode='clu'):
+def IsoPS(k, fpbh, Mpbh, xcl=None, xi0=None, mode='pos'):
     """
     计算PBH功率谱
     """
@@ -167,7 +173,7 @@ def IsoPS(k, fpbh, Mpbh, xcl=None, xi0=None, mode='clu'):
 
 
 # Total power spectrum for PBH universes at z=0, (Mpc/h)^3
-def PkPBH(k, fpbh, Mpbh, xcl=None, xi0=None, mode='clu'):
+def PkPBH(k, fpbh, Mpbh, xcl=None, xi0=None, mode='pos'):
     """
     计算PBH宇宙中的总物质功率谱 (z=0)
     """

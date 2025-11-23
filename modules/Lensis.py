@@ -58,7 +58,7 @@ class LensingAnalysis:
     引力透镜分析类，整合所有相关函数
     """
     
-    def __init__(self, pz_data_file="data/pz.txt", precompute_tau=True, **kwargs):
+    def __init__(self, pz_data_file="data/BBH_data/pz.txt", precompute_tau=True, **kwargs):
         """
         初始化
         
@@ -113,7 +113,7 @@ class LensingAnalysis:
             self.psa = np.array([1, 0.5, 0.1, 0.01])
     
     
-    def _precompute_tau_integral(self, zs_points=50, sigma_points=200, zl_points=100):
+    def _precompute_tau_integral(self, zs_points=70, sigma_points=200, zl_points=100):
         """
         预计算光学深度积分并创建插值器
         
@@ -122,7 +122,7 @@ class LensingAnalysis:
         sigma_points: sigma采样点数  
         zl_points: zl采样点数
         """
-        print("预计算光学深度积分...")
+        #print("预计算光学深度积分...")
         
         # 定义源红移范围
         zs_min = self.zmin
@@ -285,8 +285,11 @@ class LensingAnalysis:
     
     def ps(self, zs_array):
         """源红移分布函数"""
-        #return np.interp(zs_array, self.zsa, self.psa)
-        #先用一个高斯分布做测试
+        return np.interp(zs_array, self.zsa, self.psa)
+    
+    
+    def ps_test(self, zs_array):
+        #用高斯分布做对比测试
         
         sigma = 3
         mu = 2
@@ -305,7 +308,7 @@ class LensingAnalysis:
         zs: 源红移
         
         返回:
-        dtau数组
+        dtau数组  #
         """
         # 从类参数中提取值
         fpbh = self.parameters['fpbh']
@@ -506,7 +509,7 @@ class LensingAnalysis:
         """
         zs_grid = np.linspace(self.zmin, self.zmax, n_points)
         tau_zs = self.integrate_tau(zs_grid)
-        dN_array = tau_zs*self.ps(zs_grid)
+        dN_array = R*T_obs*tau_zs*self.ps(zs_grid)
         
         return np.trapz(dN_array,zs_grid)
     
@@ -532,24 +535,3 @@ class LensingAnalysis:
         return self.parameters.copy()
 
 
-
-'''
-sigma = np.array([100,120,300])
-zl = np.array([0.1, 0.5, 1])
-zs = np.array([0.5, 1, 1.5])
-# 创建分析对象
-analysis = LensingAnalysis(cosmo)
-
-# 使用g函数 - 自动使用相同的参数
-result = analysis.time_delay(1, sigma, zl, zs)
-
-y1 = analysis.kernel.K(zl,zs)
-y2 = sis_velocity_dispersion(0,None,2000)
-print(result, sigma**4*y1, y2)
-
-# 更新参数
-analysis.update_parameters(fpbh=1e-2)  # 自动重新预计算
-
-# 再次使用g函数 - 自动使用更新后的参数
-result2 = analysis.g(sigma, zl, zs)
-'''
