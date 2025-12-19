@@ -54,7 +54,7 @@ class PlotConfig:
         self.halo_line_width_m = 2.0
         self.halo_grid_alpha_m = 0.3
         self.halo_legend_loc_m = 3
-        self.halo_legend = 12
+        self.halo_legend = 18
     
         
         # 质量函数图参数（速度空间）
@@ -142,15 +142,18 @@ def plot_mass_function(ax, M, z, fpbh, MassPBH, xcl, xi0, config, space='mass'):
     """绘制质量函数（质量空间或速度空间）"""
     # 定义模型配置
     models = [
-        ('CDM', 'st', 'k-', r"$\Lambda$CDM (ST)", 2.0),
-        ('CDM', 'jk', 'k--', r"$\Lambda$CDM (Jenkins)", 2.0)
+        ('CDM', 'st', 'k-', r"$\Lambda$CDM", 2.0)
+        #('CDM', 'st', 'k-', r"CDM (ST)", 2.0),
+        #('CDM', 'jk', 'k--', r"CDM (Jenkins)", 2.0)
     ]
     
     pbh_models = [
-        ('PBH', 'st', 'clu', 'blue', '-', "ST, Cluster", 2.0),
-        ('PBH', 'st', 'pos', 'green', '-', "ST, Poisson", 2.0),
-        ('PBH', 'jk', 'clu', 'blue', '--', "Jenkins, Cluster", 2),
-        ('PBH', 'jk', 'pos', 'green', '--', "Jenkins, Poisson", 2)
+        ('PBH', 'st', 'clu', 'blue', '-', "Cluster", 2.0),
+        ('PBH', 'st', 'pos', 'green', '-', "Poisson", 2.0)
+        #('PBH', 'st', 'clu', 'blue', '-', "ST, Cluster", 2.0),
+        #('PBH', 'st', 'pos', 'green', '-', "ST, Poisson", 2.0),
+        #('PBH', 'jk', 'clu', 'blue', '--', "Jenkins, Cluster", 2),
+        #('PBH', 'jk', 'pos', 'green', '--', "Jenkins, Poisson", 2)
     ]
     
     # 绘制CDM模型
@@ -175,7 +178,7 @@ def plot_mass_function(ax, M, z, fpbh, MassPBH, xcl, xi0, config, space='mass'):
     for model_type, model, mode, color, linestyle, desc, lw in pbh_models:
         dndlnM = halo_mass_function(M, z, model_type, model=model,
                                   fpbh=fpbh, Mpbh=MassPBH, xcl=xcl, xi0=xi0, mode=mode)
-        label = f"$\Lambda$CDM+PBH ({desc})"
+        label = rf"$\Lambda$CDM+PBH ({desc})"
         if space == 'velocity':
             sigma = sis_velocity_dispersion(z, M, None)
             dM_dsigma = np.gradient(M, sigma)
@@ -221,8 +224,8 @@ def plot_mass_function(ax, M, z, fpbh, MassPBH, xcl, xi0, config, space='mass'):
 #--- 主程序 ---#
 # 设置参数
 MassPBH = 1e9
-fracs = 1e-3
-xcl = 1  # Mpc
+fracs = 10**-3
+xcl = 1 # Mpc
 xi0 = 10
 z = 7
 

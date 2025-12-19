@@ -153,13 +153,15 @@ if __name__ == "__main__":
     cosmology_types = ['CDM', 'CDM+PBH', 'CDM+PBH']
     modes = ['pos', 'pos', 'clu']
     models = [1, 2, 3]
-    MPBH = 1e9 #Msun
-    xcl = 1 #Mpc
+    
+    # 定义不同的MPBH和xcl值
+    MPBH_values = [1e6, 1e7, 1e8, 1e9, 1e10]  # Msun
+    xcl_values = [1, 10]  # Mpc
     xi0 = 10
     
     # 测试参数范围
-    a_values = np.logspace(-1, 8, 180)
-    f_pbh_values = np.logspace(-7, -2, 100)
+    a_values = np.logspace(-1, 8, 100)
+    f_pbh_values = np.logspace(-7, -2, 70)
     
     # 积分区域
     y_range = (1e-3, 7.0)
@@ -167,78 +169,84 @@ if __name__ == "__main__":
     
     # GW的事件率与观测时长
     R = 5e5    # yr^-1
-    T_obs = 10 # yr
-    
-    
-    # 创建HDF5文件
-    h5_filename = 'data/lensing_analysis_data/lensing_analysis_results.h5'
-    print(f"创建HDF5文件: {h5_filename}")
+    T_obs = 10 # yrs
     
     # 选择并行或顺序计算
     USE_PARALLEL = True  # 设置为False使用顺序计算
     
-    with h5py.File(h5_filename, 'w') as h5f:
-        # 保存公共参数
-        h5f.attrs['R'] = R
-        h5f.attrs['T_obs'] = T_obs
-        h5f.attrs['MPBH'] = MPBH
-        h5f.attrs['xcl'] = xcl
-        h5f.attrs['xi0'] = xi0
-        h5f.attrs['y_range_min'] = y_range[0]
-        h5f.attrs['y_range_max'] = y_range[1]
-        h5f.attrs['z_range_min'] = z_range[0]
-        h5f.attrs['z_range_max'] = z_range[1]
-        h5f.attrs['use_parallel'] = USE_PARALLEL
-        
-        # 保存参数数组
-        h5f.create_dataset('a_values', data=a_values)
-        h5f.create_dataset('f_pbh_values', data=f_pbh_values)
-        
-        print("开始计算多个模型和f_pbh值的积分...")
-        
-        for cosmo_type, mode, model in zip(cosmology_types, modes, models):
-            print(f"\n=== 计算 {cosmo_type} 模型 (mode: {mode}, model: {model}) ===")
+    # 循环所有MPBH和xcl组合
+    total_combinations = len(MPBH_values) * len(xcl_values)
+    current_combination = 0
+    
+    for MPBH in MPBH_values:
+        for xcl in xcl_values:
+            current_combination += 1
+            print(f"\n{'='*60}")
+            print(f"计算组合 {current_combination}/{total_combinations}: MPBH = {MPBH:.1e} Msun, xcl = {xcl} Mpc")
+            print(f"{'='*60}")
             
-            # 为每个模型创建组
-            model_group = h5f.create_group(f'model_{model}')
-            model_group.attrs['cosmology_type'] = cosmo_type
-            model_group.attrs['mode'] = mode
+            # 创建HDF5文件，文件名包含MPBH和xcl信息
+            h5_filename = f'data/lensing_analysis_data/lensing_analysis_results_{MPBH:.0e}_{xcl}.h5'
+            print(f"创建HDF5文件: {h5_filename}")
             
-            # 选择计算方法
-            if USE_PARALLEL:
-                N_lens_array, results_3d = compute_model_parallel(
-                    cosmo_type, mode, model, f_pbh_values, MPBH, xcl, xi0,a_values, 
-                    y_range, z_range, R, T_obs
-                )
-            else:
-                N_lens_array, results_3d = compute_model_sequential(
-                    cosmo_type, mode, model, f_pbh_values, MPBH, xcl, xi0,a_values, 
-                    y_range, z_range, R, T_obs
-                )
+            with h5py.File(h5_filename, 'w') as h5f:
+                # 保存公共参数
+                h5f.attrs['R'] = R
+                h5f.attrs['T_obs'] = T_obs
+                h5f.attrs['MPBH'] = MPBH
+                h5f.attrs['xcl'] = xcl
+                h5f.attrs['xi0'] = xi0
+                h5f.attrs['y_range_min'] = y_range[0]
+                h5f.attrs['y_range_max'] = y_range[1]
+                h5f.attrs['z_range_min'] = z_range[0]
+                h5f.attrs['z_range_max'] = z_range[1]
+                h5f.attrs['use_parallel'] = USE_PARALLEL
+                
+                # 保存参数数组
+                h5f.create_dataset('a_values', data=a_values)
+                h5f.create_dataset('f_pbh_values', data=f_pbh_values)
+                
+                print("开始计算多个模型和f_pbh值的积分...")
+                
+                for cosmo_type, mode, model in zip(cosmology_types, modes, models):
+                    print(f"\n=== 计算 {cosmo_type} 模型 (mode: {mode}, model: {model}) ===")
+                    
+                    # 为每个模型创建组
+                    model_group = h5f.create_group(f'model_{model}')
+                    model_group.attrs['cosmology_type'] = cosmo_type
+                    model_group.attrs['mode'] = mode
+                    
+                    # 选择计算方法
+                    if USE_PARALLEL:
+                        N_lens_array, results_3d = compute_model_parallel(
+                            cosmo_type, mode, model, f_pbh_values, MPBH, xcl, xi0, a_values, 
+                            y_range, z_range, R, T_obs
+                        )
+                    else:
+                        N_lens_array, results_3d = compute_model_sequential(
+                            cosmo_type, mode, model, f_pbh_values, MPBH, xcl, xi0, a_values, 
+                            y_range, z_range, R, T_obs
+                        )
+                    
+                    # 保存数据到HDF5
+                    model_group.create_dataset('integral_results', data=results_3d)
+                    model_group.create_dataset('N_lens', data=N_lens_array)
+                    
+                    print(f"模型 {model} 数据已保存到HDF5文件")
             
-            # 保存数据到HDF5
-            model_group.create_dataset('integral_results', data=results_3d)
-            model_group.create_dataset('N_lens', data=N_lens_array)
-            
-            print(f"模型 {model} 数据已保存到HDF5文件")
+            print(f"组合 MPBH={MPBH:.1e}, xcl={xcl} 计算完成，文件已保存: {h5_filename}")
     
     # 计算总时间
     end_time = time.time()
     total_time = (end_time - start_time)/3600
-    print(f"\n计算完成！总用时: {total_time:.2f} 小时")
-    print(f"所有数据已保存到: {h5_filename}")
+    print(f"\n所有组合计算完成！总用时: {total_time:.2f} 小时")
     
-    # 验证HDF5文件内容
-    print("\nHDF5文件结构:")
-    with h5py.File(h5_filename, 'r') as h5f:
-        def print_h5_structure(name, obj):
-            if isinstance(obj, h5py.Dataset):
-                print(f"  Dataset: {name}, shape: {obj.shape}, dtype: {obj.dtype}")
-            elif isinstance(obj, h5py.Group):
-                print(f"Group: {name}")
-        
-        h5f.visititems(print_h5_structure)
-        
+    # 打印所有生成的文件
+    print("\n生成的数据文件列表:")
+    for MPBH in MPBH_values:
+        for xcl in xcl_values:
+            filename = f'data/lensing_analysis_data/lensing_analysis_results_MPBH_{MPBH:.0e}_xcl_{xcl}.h5'
+            print(f"  {filename}")
         
       
         

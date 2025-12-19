@@ -1,253 +1,388 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov 21 14:54:30 2025
+Created on Mon Nov 24 09:55:25 2025
 
 @author: ubuntu
 """
-
-import numpy as np
-from modules import compute_interpolated_data
-import emcee
+from McmcData import get_available_multipliers_from_h5, load_mcmc_results,load_mcmc_summary
 import matplotlib.pyplot as plt
-import corner
-from scipy.interpolate import RegularGridInterpolator, interp1d
-from scipy.special import gammaln
-from FiducialPlots import load_sampling_data
+import numpy as np
+import os
 
-
-
-# 防止一直调用浪费时间，后续可多文件处理此信息
-h5_filename='data/lensing_analysis_data/lensing_analysis_results.h5'
-interpolated_data = compute_interpolated_data(h5_filename)
-
-
-def get_model_interpolation_data(interpolated_data, model_name, lg_fpbh, dt_new):
-    """
-    从插值数据中获取指定模型和参数下的 p_lg_dt 和 N_lens
+def format_R_value(R):
+    """格式化 R 值为科学计数法表示"""
+    if R == 0:
+        return "0"
     
-    参数:
-    ----------
-    interpolated_data : dict
-        包含所有模型插值数据的字典
-    model_name : str
-        模型名称，如 'model_1', 'model_2' 等
-    lg_fpbh : float or array-like
-        f_pbh 的对数值
-    dt_new : array-like
-        时间延迟数据点
-        
-    返回:
-    -------
-    p_lg_dt_interp : array-like
-        插值后的概率密度函数值
-    N_lens_interp : float
-        插值后的透镜事件数
-    """
-    # 访问特定模型的数据
-    model_data = interpolated_data['models'][model_name]
-    fpbh_list = interpolated_data['new_f_pbh_values']
-    dt_list = interpolated_data['new_a_values']
+    exponent = int(np.floor(np.log10(abs(R))))
+    coefficient = R / 10**exponent
     
-    # 原始数据网格
-    dt_expanded = np.tile(dt_list, (len(fpbh_list), 1))
-    p_lg_dt = model_data['integrand_dense'] * dt_expanded * np.log(10)
-    N_lens = model_data['N_lens_multiplied']
-    
-    # p_lg_dt 是二维插值 (f_pbh, dt)
-    interp_p_lg_dt = RegularGridInterpolator(
-        (np.log10(fpbh_list), np.log10(dt_list)), 
-        p_lg_dt, 
-        bounds_error=False, 
-        fill_value=0.0
-    )
-    
-    # N_lens 是一维插值 (f_pbh)
-    interp_N_lens = interp1d(
-        np.log10(fpbh_list), 
-        N_lens, 
-        bounds_error=False, 
-        fill_value=0.0
-    )
-    
-    # 对输入参数进行插值
-    if np.isscalar(lg_fpbh):
-        # 单个 f_pbh 值
-        points = np.column_stack((
-            np.full_like(dt_new, lg_fpbh),
-            np.log10(dt_new)
-        ))
-        p_lg_dt_interp = interp_p_lg_dt(points)
-        N_lens_interp = float(interp_N_lens(lg_fpbh))
+    if coefficient == 1:
+        return f"$10^{{{exponent}}}$"
+    elif coefficient == -1:
+        return f"$-10^{{{exponent}}}$"
     else:
-        # 多个 f_pbh 值
-        p_lg_dt_interp = []
-        N_lens_interp = []
-        for f_val in lg_fpbh:
-            points = np.column_stack((
-                np.full_like(dt_new, f_val),
-                np.log10(dt_new)
-            ))
-            p_lg_dt_interp.append(interp_p_lg_dt(points))
-            N_lens_interp.append(float(interp_N_lens(f_val)))
+        return f"${coefficient:.1f} \\times 10^{{{exponent}}}$"
+
+
+def plot_fpbh_histograms(model_name, results_dir='data/mcmc_data', 
+                        save_plot=True, plot_format='pdf'):
+    """
+    使用直方图绘制f_pbh后验分布，更好地显示分布的复杂形状
+    """
+    # 检查文件是否存在模拟的数据与mcmc的数据
+    R_filename_s = 'data/simulation_data/time_delay_samples_CDM_all_multipliers_R.npz'
+    T_filename_s = 'data/simulation_data/time_delay_samples_CDM_all_multipliers_T.npz'
+    R_tot = 5e5
+    T_tot = 10.0
+    
+    R_filename_m = f'{results_dir}/mcmc_results_R_{model_name}.h5'
+    T_filename_m = f'{results_dir}/mcmc_results_T_{model_name}.h5'
+    
+    if not os.path.exists(R_filename_m) and not os.path.exists(T_filename_m):
+        print(f"Error: No MCMC results found for model {model_name}")
+        return
+    
+    # 创建图形和子图
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # 处理R倍数
+    if os.path.exists(R_filename_m):
+        print("Processing R multipliers for histogram plotting...")
         
-        p_lg_dt_interp = np.array(p_lg_dt_interp)
-        N_lens_interp = np.array(N_lens_interp)
-    
-    return p_lg_dt_interp, N_lens_interp
-
-
-# 给出不同模型在模拟数据之下的后验分布用于后续的MCM计算参数估计
-def posterior_distribution(lg_fpbh, model_name='model_2'):
-    """
-    用其他模型去拟合模拟的数据
-    """
-    # 使用默认的密集网格得到归一化的截断插值数据
-    
-    
-    # 使用新的插值函数获取 p_lg_dt 和 N_lens
-    p_lg_dt_interp, N_lens_interp = get_model_interpolation_data(
-        interpolated_data, model_name, lg_fpbh, samples_dt
-    )
-    
-    # 检查插值结果的有效性
-    if np.any(p_lg_dt_interp <= 0) or N_lens_interp <= 0:
-        return -np.inf
-    
-    if -6 <= lg_fpbh <= -2:
-        n_lens = len(samples_lg_dt)
+        # 获取可用的R倍数
+        available_R_multipliers = get_available_multipliers_from_h5('R', model_name, results_dir)
+        print(f"Available R multipliers: {available_R_multipliers}")
         
-        # 使用对数形式计算，避免数值问题
-        # 修正：使用gammaln而不是斯特林近似，更精确
-        log_poisson_term = n_lens * np.log(N_lens_interp) - N_lens_interp
-        log_factorial_term = gammaln(n_lens + 1)  # ln(n_lens!)
-        log_likelihood_term = np.sum(np.log(p_lg_dt_interp))
+        # 颜色映射
+        #colors = plt.cm.viridis(np.linspace(0, 1, len(available_R_multipliers)))
+        colors = ['orange', 'green', 'blue', 'red']
         
-        log_posterior_dt = log_likelihood_term
-        log_posterior_n = log_poisson_term - log_factorial_term
+        for i, multiplier in enumerate(available_R_multipliers):
+            try:
+                # 加载MCMC结果
+                mcmc_data = load_mcmc_results('R', multiplier, model_name, results_dir)
+                flat_samples = mcmc_data['flat_samples'].flatten()
+                
+                # 使用直方图
+                color = colors[i]
+                R_formatted = format_R_value(R_tot*multiplier)
+                label = rf'R = {R_formatted} $\mathrm{{yr}}^{{-1}}$'
+                
+                # 计算合适的bin数量
+                n_bins = min(50, len(flat_samples) // 10)
+                n_bins = min(n_bins, 30)  # 至多30个bin
+                
+                axes[0].hist(flat_samples, bins=n_bins, density=True, alpha=0.5, 
+                            color=color, label=label, histtype='step', linewidth=2)
+                
+                # 标记关键统计量
+                median = np.median(flat_samples)
+                q5 = np.percentile(flat_samples, 5)
+                q95 = np.percentile(flat_samples, 95)
+                
+                #axes[0].axvline(median, color=color, linestyle='-', alpha=0.8, linewidth=1.5)
+                #axes[0].axvline(q5, color=color, linestyle='--', alpha=0.6, linewidth=1)
+                axes[0].axvline(q95, color=color, linestyle='--', alpha=1, linewidth=2)
+                
+            except Exception as e:
+                print(f"Error processing R multiplier {multiplier} for histogram: {e}")
         
-        return log_posterior_dt+log_posterior_n
-    else:
-        return -np.inf
-    
-#print(posterior_distribution(-3))
+        # 设置R倍数子图属性
+        axes[0].set_xlabel(r'$\log(f_{\mathrm{PBH}})$', fontsize=16)
+        axes[0].set_ylabel('Probability Density', fontsize=16)
+        axes[0].set_xlim(-5, -2.5)
+        axes[0].tick_params(axis='both', which='major', labelsize=16)
+        axes[0].legend(fontsize=15)
+        axes[0].grid(True, alpha=0.3)
+        
+    # 处理T倍数
+    if os.path.exists(T_filename_m):
+        print("Processing T multipliers for histogram plotting...")
+        
+        # 获取可用的T倍数
+        available_T_multipliers = get_available_multipliers_from_h5('T', model_name, results_dir)
+        print(f"Available T multipliers: {available_T_multipliers}")
+        
+        # 颜色映射
+        #colors = plt.cm.plasma(np.linspace(0, 1, len(available_T_multipliers)))
+        colors = ['orange', 'green', 'blue', 'red']
+        
+        for i, multiplier in enumerate(available_T_multipliers):
+            try:
+                # 加载MCMC结果
+                mcmc_data = load_mcmc_results('T', multiplier, model_name, results_dir)
+                flat_samples = mcmc_data['flat_samples'].flatten()
+                
+                # 使用直方图
+                color = colors[i]
+                T_formatted = T_tot*multiplier
+                label = rf'$T_{{\rm obs}}$ = {T_formatted} $\rm yrs$'
+                
+                # 计算合适的bin数量
+                n_bins = min(50, len(flat_samples) // 10)
+                n_bins = min(n_bins, 30)  # 至多30个bin
+                
+                axes[1].hist(flat_samples, bins=n_bins, density=True, alpha=0.5, 
+                            color=color, label=label, histtype='step', linewidth=2)
+                
+                # 标记关键统计量
+                median = np.median(flat_samples)
+                q5 = np.percentile(flat_samples, 5)
+                q95 = np.percentile(flat_samples, 95)
+                
+                #axes[1].axvline(median, color=color, linestyle='-', alpha=0.8, linewidth=1.5)
+                #axes[1].axvline(q5, color=color, linestyle='--', alpha=0.6, linewidth=1)
+                axes[1].axvline(q95, color=color, linestyle='--', alpha=1, linewidth=2)
+                
+            except Exception as e:
+                print(f"Error processing T multiplier {multiplier} for histogram: {e}")
+        
+        # 设置T倍数子图属性
+        axes[1].set_xlabel(r'$\log(f_{\mathrm{PBH}})$', fontsize=16)
+        axes[1].set_ylabel('Probability Density', fontsize=16)
+        axes[1].set_xlim(-5, -2.5)
+        axes[1].tick_params(axis='both', which='major', labelsize=16)
+        axes[1].legend(fontsize=15)
+        axes[1].grid(True, alpha=0.3)
 
-
-def run_emcee_sampler(n_walkers=50, n_steps=5000, n_burnin=1000):
-    """
-    Run EMCEE sampler to estimate posterior distribution of lg_fpbh
-    """
-    # Define log probability function (for emcee)
-    def log_probability(theta):
-        lg_fpbh = theta[0]
-        return posterior_distribution(lg_fpbh)
     
-    # Initialize sampler
-    ndim = 1  # parameter dimension
-    initial_guess = -4.0  # initial guess for lg_fpbh
-    
-    # Randomly initialize walker positions around initial guess
-    starting_guesses = initial_guess + 1e-2 * np.random.randn(n_walkers, ndim)
-    
-    # Create sampler without pool
-    sampler = emcee.EnsembleSampler(n_walkers, ndim, log_probability)
-    
-    # Run MCMC sampling with progress bar
-    print("Starting MCMC sampling...")
-    sampler.run_mcmc(starting_guesses, n_steps, progress=True)
-    print("Sampling completed!")
-    
-    # Get sampling chain
-    samples = sampler.get_chain()
-    
-    return sampler, samples
-
-def analyze_results(sampler, n_burnin=1000):
-    """
-    Analyze MCMC results and plot posterior distribution
-    """
-    # Get samples after removing burn-in period
-    flat_samples = sampler.get_chain(discard=n_burnin, thin=15, flat=True)
-    
-    # Calculate statistics
-    lg_fpbh_mean = np.mean(flat_samples[:, 0])
-    lg_fpbh_std = np.std(flat_samples[:, 0])
-    lg_fpbh_median = np.median(flat_samples[:, 0])
-    
-    # Calculate confidence intervals
-    lg_fpbh_lower = np.percentile(flat_samples[:, 0], 16)
-    lg_fpbh_upper = np.percentile(flat_samples[:, 0], 84)
-    
-    print(f"Posterior distribution statistics:")
-    print(f"  Mean: lg_fpbh = {lg_fpbh_mean:.3f} ± {lg_fpbh_std:.3f}")
-    print(f"  Median: lg_fpbh = {lg_fpbh_median:.3f}")
-    print(f"  68% Confidence Interval: [{lg_fpbh_lower:.3f}, {lg_fpbh_upper:.3f}]")
-    
-    # 修复绘图部分 - 使用正确的子图创建方式
-    fig = plt.figure(figsize=(10, 8))
-    
-    # 1. Sampling chain trace plot
-    ax1 = plt.subplot(2, 1, 1)
-    ax1.plot(sampler.get_chain()[:, :, 0], alpha=0.7)
-    ax1.set_ylabel('lg_fpbh')
-    ax1.set_xlabel('Step')
-    ax1.set_title('MCMC Sampling Chain')
-    ax1.axvline(n_burnin, color='red', linestyle='--', alpha=0.7, label='Burn-in end')
-    ax1.legend()
-    
-    # 2. Posterior distribution histogram
-    ax2 = plt.subplot(2, 1, 2)
-    ax2.hist(flat_samples[:, 0], bins=50, density=True, alpha=0.7, color='blue')
-    ax2.axvline(lg_fpbh_median, color='red', linestyle='-', label=f'Median: {lg_fpbh_median:.3f}')
-    ax2.axvline(lg_fpbh_lower, color='red', linestyle='--', alpha=0.7, label='68% CI')
-    ax2.axvline(lg_fpbh_upper, color='red', linestyle='--', alpha=0.7)
-    ax2.set_xlabel('lg_fpbh')
-    ax2.set_ylabel('Probability Density')
-    ax2.set_title('lg_fpbh Posterior Distribution')
-    ax2.legend()
-    
+    # 调整布局
     plt.tight_layout()
-    plt.savefig('Plots/lg_fpbh_posterior.pdf', dpi=300, bbox_inches='tight')
+    
+    
+    # 保存图形
+    if save_plot:
+        plot_dir = 'Plots'
+        os.makedirs(plot_dir, exist_ok=True)
+        plot_filename = f'{plot_dir}/fpbh_histograms_{model_name}.{plot_format}'
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Histogram plot saved to: {plot_filename}")
+    
     plt.show()
     
-    # Plot corner plot
-    fig = corner.corner(flat_samples, bins=20, show_titles=True, \
-                    title_fmt=".2f", title_kwargs={"fontsize":18}, plot_datapoints= False,\
-                        smooth=2.0,smooth1d=2.0,plot_density=True, color='green',levels=(0.6826, 0.9544),\
-                            labels=[r'$\log_{10} f_{\mathrm{pbh}}$'], label_kwargs = {"fontsize":28})
+    return fig, axes
 
-    plt.savefig('Plots/lg_fpbh_corner.png', dpi=300, bbox_inches='tight')
+
+def plot_fpbh_credible_intervals(model_name, results_dir='data/mcmc_data', 
+                                save_plot=True, plot_format='pdf'):
+    """
+    绘制可信区间图，更好地显示参数估计的不确定性
+    """
+    
+    # 检查文件是否存在模拟的数据与mcmc的数据
+    R_filename_s = 'data/simulation_data/time_delay_samples_CDM_all_multipliers_R.npz'
+    T_filename_s = 'data/simulation_data/time_delay_samples_CDM_all_multipliers_T.npz'
+    R_tot = 5e5
+    T_tot = 10.0
+    
+    R_filename = f'{results_dir}/mcmc_results_R_{model_name}.h5'
+    T_filename = f'{results_dir}/mcmc_results_T_{model_name}.h5'
+    
+    if not os.path.exists(R_filename) and not os.path.exists(T_filename):
+        print(f"Error: No MCMC results found for model {model_name}")
+        return
+    
+    # 创建图形和子图
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+    
+    def plot_credible_intervals(data, ax, color, label, position):
+        """绘制可信区间"""
+        median = np.median(data)
+        q16 = np.percentile(data, 16)
+        q84 = np.percentile(data, 84)
+        q5 = np.percentile(data, 5)
+        q95 = np.percentile(data, 95)
+        
+        # 绘制68%和90%可信区间
+        ax.errorbar(position, median, 
+                   yerr=[[median - q16], [q84 - median]], 
+                   fmt='o', color=color, capsize=5, capthick=2, 
+                   markersize=8, label=label)
+        
+        ax.errorbar(position, median, 
+                   yerr=[[median - q5], [q95 - median]], 
+                   fmt='none', color=color, capsize=3, capthick=1, 
+                   alpha=0.7, elinewidth=1)
+    
+    # 处理R倍数
+    if os.path.exists(R_filename):
+        print("Processing R multipliers for credible intervals...")
+        
+        # 获取可用的R倍数
+        available_R_multipliers = get_available_multipliers_from_h5('R', model_name, results_dir)
+        print(f"Available R multipliers: {available_R_multipliers}")
+        
+        # 颜色映射
+        #colors = plt.cm.viridis(np.linspace(0, 1, len(available_R_multipliers)))
+        colors = ['orange', 'green', 'blue', 'red']
+        
+        for i, multiplier in enumerate(available_R_multipliers):
+            try:
+                # 加载MCMC结果
+                mcmc_data = load_mcmc_results('R', multiplier, model_name, results_dir)
+                flat_samples = mcmc_data['flat_samples'].flatten()
+                
+                color = colors[i]
+                R_formatted = format_R_value(R_tot*multiplier)
+                label = rf'R = {R_formatted} $\mathrm{{yr}}^{{-1}}$'
+                
+                plot_credible_intervals(flat_samples, axes[0], color, label, i)
+                
+            except Exception as e:
+                print(f"Error processing R multiplier {multiplier} for credible intervals: {e}")
+        
+        # 设置R倍数子图属性
+        axes[0].set_xlabel('Index', fontsize=16)
+        axes[0].set_ylabel(r'$\log(f_{\mathrm{PBH}})$', fontsize=16)
+        #axes[0].set_xticks(range(len(available_R_multipliers)))
+        #axes[0].set_xticklabels([f'R={m}' for m in available_R_multipliers], rotation=45)
+        axes[0].legend(fontsize=15)
+        axes[0].grid(True, alpha=0.3)
+        axes[0].tick_params(axis='both', which='major', labelsize=18)
+    
+    # 处理T倍数
+    if os.path.exists(T_filename):
+        print("Processing T multipliers for credible intervals...")
+        
+        # 获取可用的T倍数
+        available_T_multipliers = get_available_multipliers_from_h5('T', model_name, results_dir)
+        print(f"Available T multipliers: {available_T_multipliers}")
+        
+        # 颜色映射
+        #colors = plt.cm.plasma(np.linspace(0, 1, len(available_T_multipliers)))
+        colors = ['orange', 'green', 'blue', 'red']
+        
+        for i, multiplier in enumerate(available_T_multipliers):
+            try:
+                # 加载MCMC结果
+                mcmc_data = load_mcmc_results('T', multiplier, model_name, results_dir)
+                flat_samples = mcmc_data['flat_samples'].flatten()
+                
+                color = colors[i]
+                T_formatted = T_tot*multiplier
+                label = rf'$T_{{\rm obs}}$ = {T_formatted} $\rm yrs$'
+                
+                plot_credible_intervals(flat_samples, axes[1], color, label, i)
+                
+            except Exception as e:
+                print(f"Error processing T multiplier {multiplier} for credible intervals: {e}")
+        
+        # 设置T倍数子图属性
+        axes[1].set_xlabel('Index', fontsize=16)
+        axes[1].set_ylabel(r'$\log(f_{\mathrm{PBH}})$', fontsize=16)
+        #axes[1].set_xticks(range(len(available_T_multipliers)))
+        #axes[1].set_xticklabels([f'T={m}' for m in available_T_multipliers], rotation=45)
+        axes[1].legend(fontsize=15)
+        axes[1].grid(True, alpha=0.3)
+        axes[1].tick_params(axis='both', which='major', labelsize=18)
+    
+    # 调整布局
+    plt.tight_layout()
+    
+    
+    # 保存图形
+    if save_plot:
+        plot_dir = 'Plots'
+        os.makedirs(plot_dir, exist_ok=True)
+        plot_filename = f'{plot_dir}/fpbh_credible_intervals_{model_name}.{plot_format}'
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Credible intervals plot saved to: {plot_filename}")
+
     plt.show()
     
-    return flat_samples
+    return fig, axes
 
-# Main program
-if __name__ == "__main__":
-    # Ensure sample data is loaded
+
+def create_enhanced_fpbh_analysis(model_name, results_dir='data/mcmc_data'):
+    """
+    创建增强的f_pbh分析，使用多种可视化方法
+    """
+    
+    print("="*60)
+    print(f"Enhanced f_PBH Analysis for {model_name}")
+    print("="*60)
+    
+    # 加载摘要信息
     try:
-        # Load sample data (adjust based on your actual data file)
-        data = np.load('data/simulation_data/time_delay_samples_CDM.npz')
-        samples_lg_dt = data['samples_lg_dt']
-        samples_dt = data['samples_dt']
-        print(f"Loaded {len(samples_lg_dt)} samples")
-    except FileNotFoundError:
-        print("Error: Sample data file not found")
-        exit(1)
+        summary = load_mcmc_summary(model_name, results_dir)
+        print(f"Model: {summary.get('model_name', 'Unknown')}")
+        print(f"Number of walkers: {summary.get('n_walkers', 'Unknown')}")
+        print(f"Number of steps: {summary.get('n_steps', 'Unknown')}")
+        print(f"Burn-in steps: {summary.get('n_burnin', 'Unknown')}")
+    except Exception as e:
+        print(f"Error loading summary: {e}")
     
-    # Run MCMC sampling with multiprocessing
-    sampler, samples = run_emcee_sampler(
-        n_walkers=10, 
-        n_steps=10000, 
-        n_burnin=500
-    )
+    # 绘制多种可视化图形
+    print("\n" + "-"*40)
+    print("Creating histogram plots...")
+    plot_fpbh_histograms(model_name, results_dir)
     
-    # Analyze results
-    flat_samples = analyze_results(sampler, n_burnin=500)
+    print("\n" + "-"*40)
+    print("Creating credible interval plots...")
+    plot_fpbh_credible_intervals(model_name, results_dir)
     
-    # Save results
-    np.savez('data/mcmc_data/mcmc_results.npz', 
-             flat_samples=flat_samples,
-             acceptance_rate=np.mean(sampler.acceptance_fraction))
+    # 打印详细统计信息
+    print("\n" + "-"*40)
+    print("Detailed Statistics:")
+    print("-"*40)
     
-    print(f"\nMean acceptance rate: {np.mean(sampler.acceptance_fraction):.3f}")
+    # R倍数统计
+    R_filename = f'{results_dir}/mcmc_results_R_{model_name}.h5'
+    if os.path.exists(R_filename):
+        print("\nR Multipliers:")
+        available_R_multipliers = get_available_multipliers_from_h5('R', model_name, results_dir)
+        for multiplier in available_R_multipliers:
+            try:
+                mcmc_data = load_mcmc_results('R', multiplier, model_name, results_dir)
+                flat_samples = mcmc_data['flat_samples'].flatten()
+                
+                median = np.median(flat_samples)
+                q5 = np.percentile(flat_samples, 5)
+                q95 = np.percentile(flat_samples, 95)
+                mean = np.mean(flat_samples)
+                std = np.std(flat_samples)
+                
+                print(f"  R={multiplier}:")
+                print(f"    Mean: {mean:.4f}")
+                print(f"    Std: {std:.4f}")
+                print(f"    Median: {median:.4f}")
+                print(f"    90% CI: [{q5:.4f}, {q95:.4f}]")
+                print(f"    Acceptance rate: {mcmc_data['acceptance_rate']:.3f}")
+                print(f"    Effective samples: {len(flat_samples)}")
+                
+            except Exception as e:
+                print(f"  Error processing R multiplier {multiplier}: {e}")
+    
+    # T倍数统计
+    T_filename = f'{results_dir}/mcmc_results_T_{model_name}.h5'
+    if os.path.exists(T_filename):
+        print("\nT Multipliers:")
+        available_T_multipliers = get_available_multipliers_from_h5('T', model_name, results_dir)
+        for multiplier in available_T_multipliers:
+            try:
+                mcmc_data = load_mcmc_results('T', multiplier, model_name, results_dir)
+                flat_samples = mcmc_data['flat_samples'].flatten()
+                
+                median = np.median(flat_samples)
+                q5 = np.percentile(flat_samples, 5)
+                q95 = np.percentile(flat_samples, 95)
+                mean = np.mean(flat_samples)
+                std = np.std(flat_samples)
+                
+                print(f"  T={multiplier}:")
+                print(f"    Mean: {mean:.4f}")
+                print(f"    Std: {std:.4f}")
+                print(f"    Median: {median:.4f}")
+                print(f"    90% CI: [{q5:.4f}, {q95:.4f}]")
+                print(f"    Acceptance rate: {mcmc_data['acceptance_rate']:.3f}")
+                print(f"    Effective samples: {len(flat_samples)}")
+                
+            except Exception as e:
+                print(f"  Error processing T multiplier {multiplier}: {e}")
 
+# 主程序
+if __name__ == "__main__":
+    # 运行增强的f_pbh分析
+    create_enhanced_fpbh_analysis(model_name='model_3')

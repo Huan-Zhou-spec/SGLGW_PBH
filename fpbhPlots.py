@@ -26,8 +26,8 @@ def plot_analysis_results_i(h5_filename, save_plots=True):
     interpolators = create_interpolators(data)
     
     # Create dense grids for smooth plotting
-    a_dense = np.logspace(np.log10(a_values[0]), np.log10(a_values[-1]), 200)
-    f_pbh_dense = np.logspace(-4, -2, 200)
+    a_dense = np.logspace(np.log10(a_values[0]), np.log10(a_values[-1]), 500)
+    f_pbh_dense = np.logspace(-4, -2, 500)
     
 
     # Create figure with 2 subplots
@@ -37,15 +37,14 @@ def plot_analysis_results_i(h5_filename, save_plots=True):
     colors = ['blue', 'red', 'green', 'orange', 'purple']
     linestyles = ['-', '--', '-.', ':', '-']
     
+    
     # Subplot 1: Compare first and last f_pbh, integral results vs a (all models)
-    ax1 = axes[0]
+    ax1 = axes[1]
     
     # 选取f_pbh_dense首尾两个 f_pbh 值
     first_fpbh = f_pbh_dense[0]
     last_fpbh = f_pbh_dense[-1]
-    
-    print(f"第一个 f_pbh 值: {first_fpbh:.2e}")
-    print(f"最后一个 f_pbh 值: {last_fpbh:.2e}")
+
     
     for idx, (model_name, model_data) in enumerate(models_data.items()):
         color = colors[idx % len(colors)]
@@ -60,16 +59,16 @@ def plot_analysis_results_i(h5_filename, save_plots=True):
         # 根据mode的值进行替换
         if cosmo_type == 'CDM' and mode == 'pos':
             mode_display = ''
-            label_last = rf'{cosmo_type} {mode_display}'
-            label_first = rf'{cosmo_type} {mode_display}'
+            label_last = rf'$\Lambda${cosmo_type} {mode_display}'
+            label_first = rf'$\Lambda${cosmo_type} {mode_display}'
         elif cosmo_type == 'CDM+PBH' and mode == 'pos':
             mode_display = 'Poisson'
-            label_last = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
-            label_first = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
+            label_last = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
+            label_first = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
         elif cosmo_type == 'CDM+PBH' and mode == 'clu':
             mode_display = 'Cluster'
-            label_last = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
-            label_first = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
+            label_last = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
+            label_first = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
         else:
             mode_display = mode
         
@@ -90,14 +89,14 @@ def plot_analysis_results_i(h5_filename, save_plots=True):
                   color=color, linestyle='--', label=label_first, linewidth=2)
     
     ax1.set_xlabel(r'$\Delta t$ (hrs)', fontsize=18)
-    ax1.set_ylabel(r'$\Delta t\times p(\Delta t|\Omega)$', fontsize=18)
+    ax1.set_ylabel(r'$\Delta t\times p(\Delta t|f_{\rm PBH})$', fontsize=18)
     ax1.tick_params(axis='both', which='major', labelsize=18)
     ax1.set_xlim(a_values[0], a_values[-1])
-    ax1.legend(fontsize=15)
+    ax1.legend(fontsize=14)
     ax1.grid(True, alpha=0.3)
     
     # Subplot 2: N_lens vs f_pbh for different models (使用插值)
-    ax2 = axes[1]
+    ax2 = axes[0]
     
     for idx, (model_name, model_data) in enumerate(models_data.items()):
         color = colors[idx % len(colors)]
@@ -118,18 +117,19 @@ def plot_analysis_results_i(h5_filename, save_plots=True):
             mode_display = mode
         
         # 绘制N_lens vs f_pbh
-        label = f'{cosmo_type} {mode_display}'
+        label = rf'$\Lambda${cosmo_type} {mode_display}'
         N_lens_dense = interp_dict['N_lens'](f_pbh_dense)
         ax2.semilogx(f_pbh_dense, N_lens_dense, 
                   color=color, linestyle=linestyle, label=label, linewidth=2)
     
     ax2.set_xlabel(r'$f_{\rm PBH}$', fontsize=18)
-    ax2.set_ylabel(r'$\Lambda_{\rm L,GW}(\Omega)$', fontsize=18)
+    ax2.set_ylabel(r'$\Lambda_{\rm L,GW}(f_{\rm PBH})$', fontsize=18)
     ax2.tick_params(axis='both', which='major', labelsize=18)
     ax2.set_xlim(f_pbh_dense[0], f_pbh_dense[-1])
     ax2.legend(fontsize=16)
     ax2.grid(True, alpha=0.3)
     
+
     # 打印插值后的N_lens值用于验证
     print("\n插值后的 N_lens 值范围:")
     for idx, (model_name, model_data) in enumerate(models_data.items()):
@@ -168,14 +168,11 @@ def plot_analysis_results_o(h5_filename, save_plots=True):
     linestyles = ['-', '--', '-.', ':', '-']
     
     # Subplot 1: Compare first and last f_pbh, integral results vs a (all models)
-    ax1 = axes[0]
+    ax1 = axes[1]
     
     # 选取首尾两个 f_pbh 索引
     first_fpbh_idx = 0
     last_fpbh_idx = len(f_pbh_values) - 1
-    
-    print(f"第一个 f_pbh 值: {f_pbh_values[first_fpbh_idx]:.2e}")
-    print(f"最后一个 f_pbh 值: {f_pbh_values[last_fpbh_idx]:.2e}")
     
     for idx, (model_name, model_data) in enumerate(models_data.items()):
         color = colors[idx % len(colors)]
@@ -190,16 +187,16 @@ def plot_analysis_results_o(h5_filename, save_plots=True):
         # 根据mode的值进行替换
         if cosmo_type == 'CDM' and mode == 'pos':
             mode_display = ''
-            label_last = rf'{cosmo_type} {mode_display}'
-            label_first = rf'{cosmo_type} {mode_display}'
+            label_last = rf'$\Lambda${cosmo_type} {mode_display}'
+            label_first = rf'$\Lambda${cosmo_type} {mode_display}'
         elif cosmo_type == 'CDM+PBH' and mode == 'pos':
             mode_display = 'Poisson'
-            label_last = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
-            label_first = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
+            label_last = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
+            label_first = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
         elif cosmo_type == 'CDM+PBH' and mode == 'clu':
             mode_display = 'Cluster'
-            label_last = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
-            label_first = rf'{cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
+            label_last = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_last}}}$)'
+            label_first = rf'$\Lambda${cosmo_type} {mode_display} ($f_{{\rm PBH}}$=$10^{{{exponent_first}}}$)'
         else:
             mode_display = mode
         
@@ -219,16 +216,16 @@ def plot_analysis_results_o(h5_filename, save_plots=True):
         
     
     ax1.set_xlabel(r'$\Delta t$ (hrs)', fontsize=18)
-    ax1.set_ylabel(r'$\Delta t\times p(\Delta t|\Omega)$', fontsize=18)
+    ax1.set_ylabel(r'$\Delta t\times p(\Delta t|f_{\rm PBH})$', fontsize=18)
     ax1.tick_params(axis='both', which='major', 
                   labelsize=18)
     ax1.set_xlim(a_values[0], a_values[-1])
-    ax1.legend(fontsize=15)  # 减小字体以适应更多图例项
+    ax1.legend(fontsize=14)  # 减小字体以适应更多图例项
     ax1.grid(True, alpha=0.3)
     
     
     # Subplot 2: N_lens vs f_pbh for different models
-    ax2 = axes[1]
+    ax2 = axes[0]
     
     for idx, (model_name, model_data) in enumerate(models_data.items()):
         color = colors[idx % len(colors)]
@@ -250,13 +247,13 @@ def plot_analysis_results_o(h5_filename, save_plots=True):
             mode_display = mode
         
         # 绘制N_lens vs f_pbh
-        label = f'{cosmo_type} {mode_display}'
+        label = rf'$\Lambda${cosmo_type} {mode_display}'
         ax2.semilogx(f_pbh_values, N_lens, 
                   color=color, linestyle=linestyle, label=label, linewidth=2)
     
     f_pbh_dense = np.logspace(-4, -2, 200)
     ax2.set_xlabel(r'$f_{\rm PBH}$', fontsize=18)
-    ax2.set_ylabel(r'$\Lambda_{\rm L,GW}(\Omega)$', fontsize=18)
+    ax2.set_ylabel(r'$\Lambda_{\rm L,GW}(f_{\rm PBH})$', fontsize=18)
     ax2.tick_params(axis='both', which='major', labelsize=18)
     ax2.set_xlim(f_pbh_dense[0], f_pbh_dense[-1])
     ax2.legend(fontsize=16)
@@ -279,5 +276,5 @@ def plot_analysis_results_o(h5_filename, save_plots=True):
 
 # Example usage
 if __name__ == "__main__":
-    h5_filename = 'data/lensing_analysis_data/lensing_analysis_results.h5'
-    data = plot_analysis_results_i(h5_filename)
+    h5_filename = 'data/lensing_analysis_data/dt/lensing_analysis_results_1e+09_1_dt.h5'
+    data = plot_analysis_results_o(h5_filename)

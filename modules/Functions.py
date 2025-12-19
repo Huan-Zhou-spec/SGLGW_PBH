@@ -73,9 +73,11 @@ class PBHPowerSpectrum:
         
         # 模式特定的预计算
         if self.mode == 'clu':
-            self.kclu = (3 * np.pi / 2 / self.xi0)**(1/3) / self.xcl / hlittle  # h/Mpc
+            self.kclu =  (2 * np.pi**2 * self.npbh/ \
+                          (1+self.npbh*4*np.pi/3*self.xcl**3*hlittle**3*self.xi0))**(1/3)   # from ncl/Nc, h/Mpc
+            #self.kclu = (3 * np.pi / 2 / self.xi0)**(1/3) / self.xcl / hlittle #Ncl>>1
         elif self.mode == 'pos':
-            self.kpbh = (2 * np.pi**2 * self.npbh)**(1/3) # h/Mpc
+            self.kpbh = (2 * np.pi**2 * self.npbh)**(1/3) # from npbh, h/Mpc
     
     def isochronous_power_spectrum(self, k):
         """
@@ -508,11 +510,11 @@ def halo_mass_function(M, z, cosmology_type='CDM',  model='st', **kwargs):
             calculator, sigvec, dersigvec = create_variance_calculator()
             s2 = sigvec(M)
             deltac = 1.68647 / cosmo.growthFactor(z)
-            nu = (deltac**2 / s2)
+            nu2 = (deltac**2 / s2)
             dlogsigdlogm = np.abs(dersigvec(M) / (2. * s2))
             
             # 使用自定义 f 函数
-            return Omega_m * rho_c_Mpc * f(nu, model=model, **kwargs) / M * dlogsigdlogm
+            return Omega_m * rho_c_Mpc * f(nu2, model=model, **kwargs) / M * dlogsigdlogm
     
     elif cosmology_normalized == 'CDM+PBH':
         # PBH 宇宙学的质量函数 - 使用自定义计算

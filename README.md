@@ -1,24 +1,35 @@
-用于计算加入超大质量原初黑洞造成的物质功率谱、暗物质晕质量分布、引力透镜时间延迟等
-ps_pbh/
-└── modules               # 所有模块集合
-    ├── constants.py      # 常用的物理学、宇宙学常数
-    ├── Cosmo.py          # 宇宙学模拟器
-    ├── Function.py       # 物质功率谱与暗物质晕质量分布函数
-    ├── Lensis.py         # sis模型下速度弥散、时间延迟、光深计算
-    ├── NIM.py            # 时间延迟分布数值计算器
-    ├── mcmc.py           # 参数估计模块
-    ├── interpolators.py  # 插值模块
-                
-└── PsHmfPlots.py         # 功率谱与质量分布画图
-└── fpbhData.py           # 用于生成不同模型下的fpbh参数数据集
-└── fpbhPlots.py          # 时间延迟分布画图
-└── FiducialPlots.py      # 用于生成基准模型时间延迟数据与分布图片
-└── McmcPlots.py          # 用于计算原初黑洞丰度后验分布的图片
-    
-└── data                  # 所有输入和输出数据集合 
+This code is designed for calculating the matter power spectrum incorporating primordial supermassive black holes, dark matter halo mass distribution, and strong gravitational lensing time delays. We can refer to arXiv:......
 
-└── Plots                 # 所有输出图集合
+
+SGLGW_PBH/
+└── modules                          # The collection of all basic computing modules
+    ├── constants.py                 # physical and cosmological constants
+    ├── Cosmo.py                     # Cosmology simulator
+    ├── Function.py                  # The power spectrum of matter and the mass distribution function of the dark matter halo
+    ├── Lensis.py                    # Velocity dispersion, time delay and depth of light calculation under the SIS model
+    ├── NIM.py                       # Time delay distribution numerical calculator
+    ├── interpolators.py             # Interpolation module
+                
+└── PsHmfPlots.py                    # Power spectrum and halo mass distribution graphs
+└── fpbhData.py                      # Generate datasets of fpbh parameters under different models
+└── TransData.py                     # Transform Equation (28) into the time delay distribution data in Equation (27)
+└── FiducialPlots.py                 # Generate the simulated time delay data and graphs under the Fiducial model (\Lambda CDM model)
+└── McmcData.py                      # Generate the mcmc chain data for the posterior distribution of fpbh
+└── McmcPlots.py                     # Mcmc chain diagram of the posterior distribution of fpbh
+└── fpbhBound.py                     # Summary graph of the upper limit of fpbh at mass range
+
+    
+└── data                             # All input and output data sets
+    ├── BBH                          # Redshift distribution of GW sources
+    ├── fpbh_bound                   # Other constraints on fpbh
+    ├── lensing_analysis_data        # time delay distribution data
+    ├── mcmc_data                    # mcmc data for different models
+    ├── simulation_data              # simulated time delay data under the Fiducial model
+
+
+└── Plots                            # The collection of all output graphs
  
-└── test                  # 存放一些测试文件，暂时无用
-持续更新中
-版本1.0.0
+
+Continuously updated
+
+Version 1.0.0

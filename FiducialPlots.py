@@ -9,7 +9,6 @@ Created on Wed Nov 19 15:43:28 2025
 import numpy as np
 from modules import compute_interpolated_data
 import matplotlib.pyplot as plt
-from scipy import stats
 
 def generate_samples_from_distribution(lg_dt_new, pdf_normalized, n_samples=10000):
     """
@@ -96,7 +95,7 @@ def run_sampling_analysis_R(h5_filename, model_name='model_1', multipliers_R=[1,
     dt_nom = np.trapezoid(pdt * np.log(10) * dt_new, lg_dt_new)
     
     # 归一化的概率密度函数
-    pdf_normalized = pdt * np.log(10) * dt_new / dt_nom
+    pdf_normalized = pdt * np.log(10) * dt_new
     
     print(f"Normalization constant dt_nom: {dt_nom:.6e}")
     print(f"Integrated normalized PDF: {np.trapezoid(pdf_normalized, lg_dt_new):.6f}")
@@ -170,12 +169,12 @@ def run_sampling_analysis_R(h5_filename, model_name='model_1', multipliers_R=[1,
         # 绘制直方图
         R_formatted = format_R_value(R_samples)
         axes[0].hist(samples_data['samples_lg_dt'], bins=20, density=True, alpha=0.5, 
-                       color=color, label=rf'R = {R_formatted} $\rm yr^{-1}$, n={n_samples}', 
+                       color=color, label=rf'R = {R_formatted} $\mathrm{{yr}}^{{-1}}$, n={n_samples}', 
                        histtype='step', linewidth=2)
     
     # 标记T_obs的位置
     T_obs = 10**lgT_obs/365/24
-    axes[0].axvline(x=lgT_obs, color='k', linestyle='--', alpha=0.7,
+    axes[0].axvline(x=lgT_obs, color='k', linestyle='--', alpha=1,
                       label=rf'${{T_{{\rm obs}}}}$={T_obs:.1f} yrs')
     
     # 添加理论PDF
@@ -203,9 +202,13 @@ def run_sampling_analysis_R(h5_filename, model_name='model_1', multipliers_R=[1,
         R_formatted = format_R_value(R_samples)
         axes[1].plot(samples_data['sample_cdf_sorted'], samples_data['sample_cdf_values'], 
                        color=color, linewidth=2, 
-                       label = rf'R = {R_formatted} $\rm yr^{-1}$, KS={ks_statistic:.3f}')
-                       
-    
+        
+                       label = rf'R = {R_formatted} $\mathrm{{yr}}^{{-1}}$, KS={ks_statistic:.3f}')
+        
+    # 标记T_obs的位置
+    T_obs = 10**lgT_obs/365/24
+    axes[1].axvline(x=lgT_obs, color='k', linestyle='--', alpha=1,
+                      label=rf'${{T_{{\rm obs}}}}$={T_obs:.1f} yrs')
     # 添加理论CDF
     axes[1].plot(lg_dt_new, cdf_theoretical, 'k-', linewidth=1.5, label='Theoretical CDF', alpha=0.8)
     axes[1].set_xlabel(r'log($\Delta t$)', fontsize = 18)
@@ -311,7 +314,7 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
         dt_nom = np.trapezoid(pdt * np.log(10) * dt_new, lg_dt_new)
         
         # 归一化的概率密度函数
-        pdf_normalized = pdt * np.log(10) * dt_new / dt_nom
+        pdf_normalized = pdt * np.log(10) * dt_new
         
         print(f"Normalization constant dt_nom: {dt_nom:.6e}")
         print(f"Integrated normalized PDF: {np.trapezoid(pdf_normalized, lg_dt_new):.6f}")
@@ -321,7 +324,7 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
         cdf_theoretical = cdf_theoretical / cdf_theoretical[-1]  # 归一化
         
         # 生成样本 - 使用固定的R倍数
-        n_samples = int(N_lens * multiplier_R)
+        n_samples = N_lens
         
         samples_lg_dt, samples_dt = generate_samples_from_distribution(
             lg_dt_new, pdf_normalized, n_samples
@@ -394,12 +397,12 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
 
         # 标记T_obs的位置
         #T_obs_ref = 10**lgT_obs/365/24
-        axes[0].axvline(x=lgT_obs, color='k', linestyle='--', alpha=0.7)
+        axes[0].axvline(x=lgT_obs, color='k', linestyle='--', alpha=1)
     
     axes[0].set_xlabel(r'log($\Delta t$)', fontsize = 18)
     axes[0].set_ylabel('Probability Density', fontsize = 18)
     axes[0].set_xlim(lg_dt_grid[0], lg_dt_grid[-1]-2)
-    axes[0].legend(fontsize=15)
+    axes[0].legend(fontsize=13)
     axes[0].tick_params(axis='both', which='major', labelsize=18)
     axes[0].grid(True, alpha=0.3)
     
@@ -423,13 +426,17 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
                        color=color, linewidth=3, 
                        label = rf'$T_{{\rm obs}}$={T_obs_years:.1f} yrs, KS={ks_statistic:.3f}')
         
+        # 标记T_obs的位置
+        #T_obs_ref = 10**lgT_obs/365/24
+        axes[1].axvline(x=lgT_obs, color='k', linestyle='--', alpha=1)
+        
         # 添加理论CDF
         axes[1].plot(lg_dt_grid, cdf_theoretical, 'k-', linewidth=1.5, alpha=0.8)
     
     axes[1].set_xlabel(r'log($\Delta t$)', fontsize = 18)
     axes[1].set_ylabel('Cumulative Probability', fontsize = 18)
     axes[1].set_xlim(lg_dt_grid[0], lg_dt_grid[-1]-2)
-    axes[1].legend(fontsize=15)
+    axes[1].legend(fontsize=13)
     axes[1].tick_params(axis='both', which='major', labelsize=18)
     axes[1].grid(True, alpha=0.3)
     
@@ -484,7 +491,7 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
         n_samples = all_samples_data[data_key]['n_samples']
         lgT_obs = all_samples_data[data_key]['lgT_obs']
         T_obs_years = 10**lgT_obs/365/24
-        print(f"Multiplier_T {multiplier_T}: T_obs={T_obs_years:.1f} yrs, {n_samples} samples, KS statistic = {ks_stat:.6f}")
+        print(f"Multiplier_T {multiplier_T}: T_obs={T_obs_years:.2f} yrs, {n_samples} samples, KS statistic = {ks_stat:.6f}")
     
     return combined_output_filename
 
@@ -682,7 +689,7 @@ def get_sampling_data_info(filename, multiplier_type='R'):
 
 # 在您的主程序中使用
 if __name__ == "__main__":
-    h5_filename = 'data/lensing_analysis_data/lensing_analysis_results.h5'
+    h5_filename = 'data/lensing_analysis_data/dt/lensing_analysis_results_1e+09_1_dt.h5'
     
     # 示例1：处理R倍数数据
     print("="*50)
@@ -725,7 +732,7 @@ if __name__ == "__main__":
     combined_file_T = run_sampling_analysis_T(
         h5_filename=h5_filename,
         model_name='model_1',
-        multipliers_T=[1, 0.5, 0.1]
+        multipliers_T=[1, 0.5, 0.2, 0.1]
     )
     
     # 使用统一函数加载T倍数数据

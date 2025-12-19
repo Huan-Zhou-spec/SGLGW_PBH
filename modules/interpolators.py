@@ -9,8 +9,8 @@ Created on Wed Nov 19 10:12:27 2025
 import h5py
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator, interp1d
-import matplotlib.pyplot as plt
 from scipy.integrate import simpson
+
 
 #读取数据
 def read_hdf5_data(h5_filename):
@@ -21,27 +21,14 @@ def read_hdf5_data(h5_filename):
         # Read common parameters
         R = h5f.attrs['R']
         T_obs = h5f.attrs['T_obs']
-        M_PBH = h5f.attrs['MPBH']
-        x_cl = h5f.attrs['xcl']
-        xi_0 = h5f.attrs['xi0']
         y_range = (h5f.attrs['y_range_min'], h5f.attrs['y_range_max'])
         z_range = (h5f.attrs['z_range_min'], h5f.attrs['z_range_max'])
-        use_parallel = h5f.attrs['use_parallel']
         
         # Read parameter arrays
         a_values = h5f['a_values'][:]
         f_pbh_values = h5f['f_pbh_values'][:]
         
-        '''
-        print("Common parameters:")
-        print(f"  R = {R}, T_obs = {T_obs}")
-        print(f"  MPBH = {M_PBH}, x_cl = {x_cl}, xi_0 = {xi_0}")
-        print(f"  y_range = {y_range}, z_range = {z_range}")
-        print(f"  Use parallel computing: {use_parallel}")
-        print(f"  a_values: {len(a_values)} points, range: {a_values[0]:.2e} - {a_values[-1]:.2e}")
-        print(f"  f_pbh_values: {len(f_pbh_values)} points, range: {f_pbh_values[0]:.2e} - {f_pbh_values[-1]:.2e}")
-        '''
-        
+
         # Read model data
         models_data = {}
         for model_name in h5f.keys():
@@ -76,7 +63,7 @@ def read_hdf5_data(h5_filename):
             'models_data': models_data
         }
 
-    
+
 #创建插值函数
 def create_interpolators(data):
     """
@@ -100,9 +87,9 @@ def create_interpolators(data):
         integral_interpolator = RegularGridInterpolator(
             (f_pbh_values, a_values), 
             integral_results,
-            method='linear',  # 线性插值，也可以选择 'cubic' 或 'nearest'
+            method='cubic',  # 线性插值，也可以选择 'cubic' 或 'nearest'
             bounds_error=False,
-            fill_value=None
+            fill_value=0.0
         )
         
         # 2. 为 N_lens 创建一维插值
@@ -112,7 +99,7 @@ def create_interpolators(data):
         N_lens_interpolator = interp1d(
             f_pbh_values,
             N_lens,
-            kind='linear',  # 线性插值，也可以选择 'cubic' 或 'quadratic'
+            kind='cubic',  # 线性插值，也可以选择 'linear' 或 'quadratic'
             bounds_error=False,
             fill_value='extrapolate'  # 允许外推
         )
@@ -165,11 +152,11 @@ def compute_interpolated_data(h5_filename, multipliers_T, new_f_pbh_values=None,
     # 设置默认的新数组（如果未提供）
     if new_f_pbh_values is None:
         new_f_pbh_values = np.logspace(np.log10(orig_f_pbh_values[0]), 
-                                     np.log10(orig_f_pbh_values[-1]), 200)
+                                     np.log10(orig_f_pbh_values[-1]), 500)
         
     if new_a_values is None:
         new_a_values = np.logspace(np.log10(orig_a_values[0]), 
-                                 np.log10(orig_a_values[-1]), 200)
+                                 np.log10(orig_a_values[-1]), 500)
     
     # 创建掩码：标记哪些时间点小于等于观测时长
     time_mask = new_a_values <= T_obs_hours
@@ -206,7 +193,7 @@ def compute_interpolated_data(h5_filename, multipliers_T, new_f_pbh_values=None,
         integral_dense_truncated[:, ~time_mask] = 0
         
         # 计算 N_lens_dense 的一维插值
-        N_lens_dense = interp_dict['N_lens'](new_f_pbh_values)
+        N_lens_dense = interp_dict['N_lens'](new_f_pbh_values) * multipliers_T
         
         # 创建 log10(new_a_values) 作为积分变量
         log_a_values = np.log10(new_a_values)
@@ -227,8 +214,8 @@ def compute_interpolated_data(h5_filename, multipliers_T, new_f_pbh_values=None,
         # 将积分结果与 N_lens_dense 相乘
         N_lens_multiplied = integral_over_time * N_lens_dense
         
-        # 将所有输出数据除以 T_obs_hours
-        integrand_dense_normalized = integrand_dense/T_obs_hours
+        # 将所有输出数据除以 T_obs_hours并归一化
+        integrand_dense_normalized = integrand_dense/integral_over_time[:,np.newaxis]
         N_lens_multiplied_normalized = N_lens_multiplied / T_obs_hours
         
         # 存储结果（使用归一化后的数据）
