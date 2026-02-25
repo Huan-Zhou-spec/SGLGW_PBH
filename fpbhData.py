@@ -155,8 +155,10 @@ if __name__ == "__main__":
     models = [1, 2, 3]
     
     # 定义不同的MPBH和xcl值
-    MPBH_values = [1e6, 1e7, 1e8, 1e9, 1e10]  # Msun
-    xcl_values = [1, 10]  # Mpc
+    #MPBH_values = [1e6, 1e7, 1e8, 1e9, 1e10]  # Msun
+    MPBH_values = [1e9]
+    #xcl_values = [1, 10]  # Mpc
+    xcl_values = [1]
     xi0 = 10
     
     # 测试参数范围

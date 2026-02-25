@@ -68,26 +68,34 @@ def main():
     
     # 设置约束参数
     constraint_params = {
-        'LSS': {'color': 'g', 'text_pos': (1e12, 9e-4), 'rotation': 75},
+        'LSS': {'color': 'gray', 'text_pos': (1e12, 9e-4), 'rotation': 75},
         'Dynamical': {'color': 'c', 'text_pos': (9e3, 2e-3), 'rotation': -75},
         'Accretion': {'color': 'olive', 'text_pos': (1e1, 8e-5), 'rotation': 90},
         'Evaporation': {'color': 'purple', 'text_pos': (1e-16, 7e-3), 'rotation': 85},
         'GWs': {'color': 'orange', 'text_pos': (1e-1, 7e-3), 'rotation': -60},
-        'Microlensing': {'color': 'r', 'text_pos': (9e-8, 2e-3), 'rotation': 60}
+        'Microlensing': {'color': 'navy', 'text_pos': (9e-8, 2e-3), 'rotation': 60}
     }
     
     # 理论曲线数据
     mb = np.array([1e6, 1e7, 1e8, 1e9, 1e10])
     f1 = np.array([10**(-2.5998), 10**(-3.0596), 10**(-3.5813), 10**(-3.7578), 10**(-3.7228)]) #model_2, R=5e5yr^-1, Tobs=10yrs
     f2 = np.array([10**(-2.4618), 10**(-3.0526), 10**(-3.2647), 10**(-3.4653), 10**(-3.5778)]) #model_2, R=1e5yr^-1, Tobs=10yrs
-    #f3 = np.array([10**(-4.0934), 10**(-4.1232), 10**(-4.1094), 10**(-4.0200), 10**(-3.8774)]) #model_3, R=5e5yr^-1, Tobs=10yrs, xcl=1
-    #f4 = np.array([10**(-3.9613), 10**(-3.9508), 10**(-3.9456), 10**(-3.8866), 10**(-3.7594)]) #model_3, R=1e5yr^-1, Tobs=10yrs, xcl=1
+    f3 = np.array([10**(-4.1166), 10**(-4.1115), 10**(-4.0755), 10**(-3.9362), 10**(-3.7679)]) #model_3, R=5e5yr^-1, Tobs=10yrs, xcl=1
+    f4 = np.array([10**(-3.8729), 10**(-3.8632), 10**(-3.8414), 10**(-3.7588), 10**(-3.6301)]) #model_3, R=1e5yr^-1, Tobs=10yrs, xcl=1
     f5 = np.array([10**(-4.0630), 10**(-4.0637), 10**(-4.0662), 10**(-4.0655), 10**(-4.0496)]) #model_3, R=5e5yr^-1, Tobs=10yrs, xcl=10
     f6 = np.array([10**(-3.9448), 10**(-3.9471), 10**(-3.9438), 10**(-3.9381), 10**(-3.9346)]) #model_3, R=1e5yr^-1, Tobs=10yrs, xcl=10
     
     f1_interpolator = interp1d(
         np.log10(mb),
         np.log10(f1),
+        kind='cubic',  # 线性插值，也可以选择 'linear' 或 'quadratic'
+        bounds_error=False,
+        fill_value='extrapolate'  # 允许外推
+    )
+    
+    f3_interpolator = interp1d(
+        np.log10(mb),
+        np.log10(f3),
         kind='cubic',  # 线性插值，也可以选择 'linear' 或 'quadratic'
         bounds_error=False,
         fill_value='extrapolate'  # 允许外推
@@ -107,13 +115,16 @@ def main():
     fig, ax = setup_plot()
     
     # 绘制理论曲线
-    ax.loglog(m_new, 10**f1_interpolator(np.log10(m_new)), 'k-', linewidth=3.5, 
+    ax.loglog(m_new, 10**f1_interpolator(np.log10(m_new)), 'r--', linewidth=3.5, 
               label=r'$\Lambda$CDM+PBH Poisson')
-    ax.loglog(m_new, 10**f5_interpolator(np.log10(m_new)), 'k--', linewidth=3.5, 
-              label=r'$\Lambda$CDM+PBH Cluster ')
+    #ax.loglog(m_new, 10**f3_interpolator(np.log10(m_new)), 'g--', linewidth=3.5, 
+              #label=r'$\Lambda$CDM+PBH Cluster $x_{\rm cl}=1~{\rm Mpc}$')
+    ax.loglog(m_new, 10**f5_interpolator(np.log10(m_new)), 'g-.', linewidth=3.5, 
+              label=r'$\Lambda$CDM+PBH Cluster')
     f_fill = create_fill_data(m_new)
-    ax.fill_between(m_new, 10**f1_interpolator(np.log10(m_new)), f_fill, facecolor='k', alpha=0.2)
-    ax.fill_between(m_new, 10**f5_interpolator(np.log10(m_new)), f_fill, facecolor='k', alpha=0.2)
+    ax.fill_between(m_new, 10**f1_interpolator(np.log10(m_new)), f_fill, facecolor='r', alpha=0.2)
+    #ax.fill_between(m_new, 10**f3_interpolator(np.log10(m_new)), f_fill, facecolor='g', alpha=0.2)
+    ax.fill_between(m_new, 10**f5_interpolator(np.log10(m_new)), f_fill, facecolor='g', alpha=0.2)
     
     # 绘制所有约束
     for name, params in constraint_params.items():

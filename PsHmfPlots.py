@@ -106,22 +106,21 @@ def plot_power_spectrum(ax, k, fpbh, MassPBH, xcl, xi0, config):
     # Draw different models
     ax.loglog(k, cosmo.matterPowerSpectrum(k), 'k-', 
               label=r"$\Lambda$CDM", linewidth=config.pow_line_width)
-    
-    ax.loglog(k, IsoPS(k, fpbh, MassPBH, xcl, xi0, 'clu'), 
-             color='red', linestyle="-", 
-             label=r"PBH (Cluster)", 
-             linewidth=config.pow_line_width)
     ax.loglog(k, IsoPS(k, fpbh, MassPBH, xcl, xi0, 'pos'), 
-             color='red', linestyle="--", 
+             color='b', linestyle="--", 
              label=r"PBH (Poisson)", 
              linewidth=config.pow_line_width)
-    ax.loglog(k, PkPBH(k, fpbh, MassPBH, xcl, xi0, 'clu'), 
-             color='blue', linestyle="-", 
-             label=r"$\Lambda$CDM+PBH (Cluster)", 
+    ax.loglog(k, IsoPS(k, fpbh, MassPBH, xcl, xi0, 'clu'), 
+             color='b', linestyle="-.", 
+             label=r"PBH (Cluster)", 
              linewidth=config.pow_line_width)
     ax.loglog(k, PkPBH(k, fpbh, MassPBH, xcl, xi0, 'pos'), 
-             color='green', linestyle="--", 
+             color='red', linestyle="--", 
              label=r"$\Lambda$CDM+PBH (Poisson)", 
+             linewidth=config.pow_line_width)
+    ax.loglog(k, PkPBH(k, fpbh, MassPBH, xcl, xi0, 'clu'), 
+             color='green', linestyle="-.", 
+             label=r"$\Lambda$CDM+PBH (Cluster)", 
              linewidth=config.pow_line_width)
     
     # 设置坐标轴标签和范围
@@ -148,8 +147,8 @@ def plot_mass_function(ax, M, z, fpbh, MassPBH, xcl, xi0, config, space='mass'):
     ]
     
     pbh_models = [
-        ('PBH', 'st', 'clu', 'blue', '-', "Cluster", 2.0),
-        ('PBH', 'st', 'pos', 'green', '-', "Poisson", 2.0)
+        ('PBH', 'st', 'pos', 'red', '--', "Poisson", 2.0),
+        ('PBH', 'st', 'clu', 'green', '-.', "Cluster", 2.0)
         #('PBH', 'st', 'clu', 'blue', '-', "ST, Cluster", 2.0),
         #('PBH', 'st', 'pos', 'green', '-', "ST, Poisson", 2.0),
         #('PBH', 'jk', 'clu', 'blue', '--', "Jenkins, Cluster", 2),

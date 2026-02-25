@@ -34,7 +34,7 @@ def plot_analysis_results_i(h5_filename, save_plots=True):
     fig, axes = plt.subplots(1, 2, figsize=(15, 6))
     
     # Colors and styles for different models
-    colors = ['blue', 'red', 'green', 'orange', 'purple']
+    colors = ['k', 'red', 'green', 'orange', 'purple']
     linestyles = ['-', '--', '-.', ':', '-']
     
     
@@ -164,7 +164,7 @@ def plot_analysis_results_o(h5_filename, save_plots=True):
     fig, axes = plt.subplots(1, 2, figsize=(15, 6))
     
     # Colors and styles for different models
-    colors = ['blue', 'red', 'green', 'orange', 'purple']
+    colors = ['k', 'red', 'green', 'orange', 'purple']
     linestyles = ['-', '--', '-.', ':', '-']
     
     # Subplot 1: Compare first and last f_pbh, integral results vs a (all models)
@@ -277,4 +277,4 @@ def plot_analysis_results_o(h5_filename, save_plots=True):
 # Example usage
 if __name__ == "__main__":
     h5_filename = 'data/lensing_analysis_data/dt/lensing_analysis_results_1e+09_1_dt.h5'
-    data = plot_analysis_results_o(h5_filename)
+    data = plot_analysis_results_i(h5_filename)

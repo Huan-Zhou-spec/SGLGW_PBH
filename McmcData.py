@@ -598,16 +598,16 @@ def get_available_multipliers_from_h5(multiplier_type, model_name='model_2', res
 
 # 主程序
 if __name__ == "__main__":
-    h5_filename = 'data/lensing_analysis_data/dt/lensing_analysis_results_1e+10_10_dt.h5'
+    h5_filename = 'data/lensing_analysis_data/test_dt/lensing_analysis_results_1e+09_1_dt.h5'
     
     # 运行MCMC分析，处理R和T倍数
     combined_summary = run_mcmc_for_all_multipliers(
         h5_filename=h5_filename,
-        model_name='model_3',
-        #multipliers_R=[1, 0.2, 0.1, 0.02],  # R倍数
-        #multipliers_T=[1, 0.5, 0.2, 0.1],   # T倍数
-        multipliers_R=[1],
-        multipliers_T=[1],
+        model_name='model_2',
+        multipliers_R=[1, 0.2, 0.1, 0.02],  # R倍数
+        multipliers_T=[1, 0.5, 0.2, 0.1],   # T倍数
+        #multipliers_R=[1],
+        #multipliers_T=[1],
         n_walkers=20,
         n_steps=10000,
         n_burnin=500

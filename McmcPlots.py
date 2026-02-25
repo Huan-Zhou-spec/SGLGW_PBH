@@ -74,8 +74,8 @@ def plot_fpbh_histograms(model_name, results_dir='data/mcmc_data',
                 n_bins = min(50, len(flat_samples) // 10)
                 n_bins = min(n_bins, 30)  # 至多30个bin
                 
-                axes[0].hist(flat_samples, bins=n_bins, density=True, alpha=0.5, 
-                            color=color, label=label, histtype='step', linewidth=2)
+                axes[0].hist(flat_samples, bins=n_bins, density=True, alpha=0.5, linestyle='--',
+                            color=color, label=label, histtype='step', linewidth=2.5)
                 
                 # 标记关键统计量
                 median = np.median(flat_samples)
@@ -124,8 +124,8 @@ def plot_fpbh_histograms(model_name, results_dir='data/mcmc_data',
                 n_bins = min(50, len(flat_samples) // 10)
                 n_bins = min(n_bins, 30)  # 至多30个bin
                 
-                axes[1].hist(flat_samples, bins=n_bins, density=True, alpha=0.5, 
-                            color=color, label=label, histtype='step', linewidth=2)
+                axes[1].hist(flat_samples, bins=n_bins, density=True, alpha=0.5, linestyle='--',
+                            color=color, label=label, histtype='step', linewidth=2.5)
                 
                 # 标记关键统计量
                 median = np.median(flat_samples)
@@ -156,7 +156,7 @@ def plot_fpbh_histograms(model_name, results_dir='data/mcmc_data',
     if save_plot:
         plot_dir = 'Plots'
         os.makedirs(plot_dir, exist_ok=True)
-        plot_filename = f'{plot_dir}/fpbh_histograms_{model_name}.{plot_format}'
+        plot_filename = f'{plot_dir}/fpbh_histograms_{model_name}_test.{plot_format}'
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         print(f"Histogram plot saved to: {plot_filename}")
     
@@ -286,7 +286,7 @@ def plot_fpbh_credible_intervals(model_name, results_dir='data/mcmc_data',
     if save_plot:
         plot_dir = 'Plots'
         os.makedirs(plot_dir, exist_ok=True)
-        plot_filename = f'{plot_dir}/fpbh_credible_intervals_{model_name}.{plot_format}'
+        plot_filename = f'{plot_dir}/fpbh_credible_intervals_{model_name}_test.{plot_format}'
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         print(f"Credible intervals plot saved to: {plot_filename}")
 
@@ -385,4 +385,4 @@ def create_enhanced_fpbh_analysis(model_name, results_dir='data/mcmc_data'):
 # 主程序
 if __name__ == "__main__":
     # 运行增强的f_pbh分析
-    create_enhanced_fpbh_analysis(model_name='model_3')
+    create_enhanced_fpbh_analysis(model_name='model_2')

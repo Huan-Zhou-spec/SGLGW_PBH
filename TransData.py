@@ -171,10 +171,10 @@ def verify_processed_data(processed_data):
 # 使用示例
 # 修改后的主程序
 if __name__ == "__main__":
-    input_h5 = 'data/lensing_analysis_data/bar_dt/lensing_analysis_results_1e+10_1.h5'
+    input_h5 = 'data/lensing_analysis_data/test_bar_dt/lensing_analysis_results_1e+09_1.h5'
     
     # 指定输出目录
-    output_dir = 'data/lensing_analysis_data/dt'
+    output_dir = 'data/lensing_analysis_data/test_dt'
     
     # 创建输出目录（如果不存在）
     os.makedirs(output_dir, exist_ok=True)

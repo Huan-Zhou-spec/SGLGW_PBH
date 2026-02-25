@@ -179,7 +179,7 @@ def run_sampling_analysis_R(h5_filename, model_name='model_1', multipliers_R=[1,
     
     # 添加理论PDF
     axes[0].plot(lg_dt_new, pdf_normalized, 'k-', linewidth=3, label='Theoretical PDF', alpha=0.8)
-    axes[0].set_xlabel(r'log($\Delta t$)', fontsize = 18)
+    axes[0].set_xlabel(r'log$[\Delta t~(\rm hrs)]$', fontsize = 18)
     axes[0].set_ylabel('Probability Density', fontsize = 18)
     axes[0].set_xlim(lg_dt_new[0], lg_dt_new[-1]-2)
     axes[0].legend(fontsize=13)
@@ -211,7 +211,7 @@ def run_sampling_analysis_R(h5_filename, model_name='model_1', multipliers_R=[1,
                       label=rf'${{T_{{\rm obs}}}}$={T_obs:.1f} yrs')
     # 添加理论CDF
     axes[1].plot(lg_dt_new, cdf_theoretical, 'k-', linewidth=1.5, label='Theoretical CDF', alpha=0.8)
-    axes[1].set_xlabel(r'log($\Delta t$)', fontsize = 18)
+    axes[1].set_xlabel(r'log$[\Delta t~(\rm hrs)]$', fontsize = 18)
     axes[1].set_ylabel('Cumulative Probability', fontsize = 18)
     axes[1].set_xlim(lg_dt_new[0], lg_dt_new[-1]-2)
     axes[1].legend(fontsize=13)
@@ -219,7 +219,7 @@ def run_sampling_analysis_R(h5_filename, model_name='model_1', multipliers_R=[1,
     axes[1].grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('Plots/time_delay_sampling_R_comparison.pdf', dpi=300, bbox_inches='tight')
+    #plt.savefig('Plots/time_delay_sampling_R_comparison.pdf', dpi=300, bbox_inches='tight')
     plt.show()
     
     # 保存数据
@@ -399,7 +399,7 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
         #T_obs_ref = 10**lgT_obs/365/24
         axes[0].axvline(x=lgT_obs, color='k', linestyle='--', alpha=1)
     
-    axes[0].set_xlabel(r'log($\Delta t$)', fontsize = 18)
+    axes[0].set_xlabel(r'log$[\Delta t~(\rm hrs)]$', fontsize = 18)
     axes[0].set_ylabel('Probability Density', fontsize = 18)
     axes[0].set_xlim(lg_dt_grid[0], lg_dt_grid[-1]-2)
     axes[0].legend(fontsize=13)
@@ -433,7 +433,7 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
         # 添加理论CDF
         axes[1].plot(lg_dt_grid, cdf_theoretical, 'k-', linewidth=1.5, alpha=0.8)
     
-    axes[1].set_xlabel(r'log($\Delta t$)', fontsize = 18)
+    axes[1].set_xlabel(r'log$[\Delta t~(\rm hrs)]$', fontsize = 18)
     axes[1].set_ylabel('Cumulative Probability', fontsize = 18)
     axes[1].set_xlim(lg_dt_grid[0], lg_dt_grid[-1]-2)
     axes[1].legend(fontsize=13)
@@ -441,7 +441,7 @@ def run_sampling_analysis_T(h5_filename, model_name='model_1', multipliers_T=[1,
     axes[1].grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('Plots/time_delay_sampling_T_comparison.pdf', dpi=300, bbox_inches='tight')
+    #plt.savefig('Plots/time_delay_sampling_T_comparison.pdf', dpi=300, bbox_inches='tight')
     plt.show()
     
     # 保存数据

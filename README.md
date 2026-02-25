@@ -1,4 +1,4 @@
-This code is designed for calculating the matter power spectrum incorporating supermassive primordial  black holes, dark matter halo mass distribution, and strong gravitational lensing time delays. We can refer to arXiv: 2601.01034.
+This code is designed for calculating the matter power spectrum incorporating supermassive primordial black holes, dark matter halo mass distribution, and strong gravitational lensing time delays. We can refer to arXiv:2601.01034.
 
 
 SGLGW_PBH/

@@ -288,15 +288,34 @@ class LensingAnalysis:
         return np.interp(zs_array, self.zsa, self.psa)
     
     
-    def ps_test(self, zs_array):
+    def ps_gas_test(self, zs_array):
         #用高斯分布做对比测试
-        
         sigma = 3
         mu = 2
         coefficient = 1 / (sigma * np.sqrt(2 * np.pi))
         exponent = -0.5 * ((zs_array - mu) / sigma) ** 2
         return coefficient * np.exp(exponent)
         
+    def ps_powerlaw_test(self, zs_array, power=0.5, a=0.0, b=7):
+        #通用的幂律测试分布函数
+    
+        # 计算归一化系数
+        # ∫_a^b x^power dx = (b^(power+1) - a^(power+1)) / (power+1)
+        if power == -1:
+           # 特殊情况：power = -1
+           norm_factor = 1.0 / (np.log(b) - np.log(a))
+        else:
+           norm_factor = (power + 1) / (b**(power + 1) - a**(power + 1))
+    
+        # 初始化结果数组
+        result = np.zeros_like(zs_array)
+    
+        # 应用幂律分布
+        mask = (zs_array >= a) & (zs_array <= b)
+        result[mask] = norm_factor * zs_array[mask]**power
+    
+        return result
+
     
     def ptau(self, sigma_array, zl_array, zs):
         """
@@ -491,7 +510,7 @@ class LensingAnalysis:
         norm_const = self.integrate_tau(zs_array)
             
         ptau_values = dtau_array / norm_const
-        ps_value = self.ps(zs_array)
+        ps_value = self.ps_powerlaw_test(zs_array) #用ps_test
         
         return ps_value * ptau_values
     
@@ -509,7 +528,7 @@ class LensingAnalysis:
         """
         zs_grid = np.linspace(self.zmin, self.zmax, n_points)
         tau_zs = self.integrate_tau(zs_grid)
-        dN_array = R*T_obs*tau_zs*self.ps(zs_grid)
+        dN_array = R*T_obs*tau_zs*self.ps_powerlaw_test(zs_grid) #用ps_test
         
         return np.trapz(dN_array,zs_grid)
     
