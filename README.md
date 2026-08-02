@@ -2,7 +2,7 @@
 
 This code is designed for calculating the matter power spectrum incorporating supermassive primordial black holes, dark matter halo mass distribution, and strong gravitational lensing time delays.
 
-**Reference:** [arXiv:2601.01034](https://arxiv.org/abs/2601.01034)
+**Reference:** [Phys.Rev.D 113 (2026) 10, L101301, arXiv:2601.01034](DOI: 10.1103/zdgd-41w4)
 
 ---
 
