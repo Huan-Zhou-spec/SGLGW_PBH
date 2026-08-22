@@ -5,3 +5,4 @@ astropy
 colossus
 emcee
 h5py
+time
