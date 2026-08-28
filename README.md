@@ -33,11 +33,12 @@ SGLGW_PBH/
 │   ├── mcmc_data/                    # MCMC data for different models
 │   └── simulation_data/              # Simulated time delay data under the Fiducial model
 │
+├── Important references/             # Reference papers for the project
+│
 └── Plots/                            # The collection of all output graphs
 ```
 
 ---
-
 *Continuously updated*
 
 **Version 1.0.0**
